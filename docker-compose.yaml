@@ -7,21 +7,38 @@ services:
         USERNAME: openclaw
         UID: 1000
         GID: 1000
-
     container_name: openclaw
     network_mode: "host"
     ports:
       - "127.0.0.1:18789:18789"
-
     # HOME как volume — сюда будут падать конфиги (~/.openclaw) и кеши
     volumes:
       - openclaw_home:/home/openclaw
-
     # Если надо — ключи/настройки через env
     env_file:
       - .env
-
+    depends_on:
+      - ollama
     restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    # Наружу (опционально) только localhost, чтобы можно было тестировать curl'ом
+    ports:
+      - "127.0.0.1:11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    # Вариант A: если у тебя настроен CDI (лучший)
+    devices:
+      - "nvidia.com/gpu=all"
+    security_opt:
+      - label=disable
+    restart: unless-stopped
+
 
 volumes:
   openclaw_home:
+  ollama_data:

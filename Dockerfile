@@ -15,6 +15,7 @@ RUN dnf -y update && \
       python3 \
       sudo tini \
       ca-certificates curl \
+      socat \
       iproute procps-ng && \
     dnf clean all
 
