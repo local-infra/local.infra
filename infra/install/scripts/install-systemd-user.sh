@@ -154,6 +154,51 @@ escape_sed_replacement() {
 	printf '%s' "$1" | sed -e 's/[\/&]/\\&/g'
 }
 
+CURRENT_USER="$(id -un)"
+CURRENT_UID="$(id -u)"
+SYSTEMCTL_USER_PREFIX=()
+
+ensure_user_bus_env() {
+	if [[ -z "${XDG_RUNTIME_DIR-}" ]]; then
+		export XDG_RUNTIME_DIR="/run/user/${CURRENT_UID}"
+	fi
+
+	if [[ -z "${DBUS_SESSION_BUS_ADDRESS-}" ]]; then
+		export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+	fi
+}
+
+maybe_start_user_manager() {
+	if [[ ${EUID} -eq 0 ]]; then
+		systemctl start "user@${CURRENT_UID}.service" >/dev/null 2>&1 || true
+	fi
+}
+
+resolve_systemctl_user_prefix() {
+	if systemctl --user show-environment >/dev/null 2>&1; then
+		SYSTEMCTL_USER_PREFIX=("systemctl" "--user")
+		return 0
+	fi
+
+	ensure_user_bus_env
+	maybe_start_user_manager
+	if systemctl --user show-environment >/dev/null 2>&1; then
+		SYSTEMCTL_USER_PREFIX=("systemctl" "--user")
+		return 0
+	fi
+
+	if systemctl --machine="${CURRENT_USER}@.host" --user show-environment >/dev/null 2>&1; then
+		SYSTEMCTL_USER_PREFIX=("systemctl" "--machine=${CURRENT_USER}@.host" "--user")
+		return 0
+	fi
+
+	return 1
+}
+
+run_systemctl_user() {
+	"${SYSTEMCTL_USER_PREFIX[@]}" "$@"
+}
+
 render_unit() {
 	local template_file="$1"
 	local output_file="$2"
@@ -186,15 +231,29 @@ echo "Installed units into ${UNIT_DIR}:"
 echo "  ai-ollama.service"
 echo "  ai-openclaw.service"
 
-systemctl --user daemon-reload
+if ! resolve_systemctl_user_prefix; then
+	echo "Error: unable to connect to user systemd manager for ${CURRENT_USER}." >&2
+	echo "Try initializing the user manager and exporting runtime bus variables, then rerun:" >&2
+	echo "  sudo loginctl enable-linger ${CURRENT_USER}" >&2
+	echo "  sudo systemctl start user@${CURRENT_UID}.service" >&2
+	echo "  export XDG_RUNTIME_DIR=/run/user/${CURRENT_UID}" >&2
+	echo "  export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/${CURRENT_UID}/bus" >&2
+	exit 1
+fi
+
+if [[ "${SYSTEMCTL_USER_PREFIX[*]}" == *"--machine="* ]]; then
+	echo "No active user session bus detected; using ${SYSTEMCTL_USER_PREFIX[*]}."
+fi
+
+run_systemctl_user daemon-reload
 
 if [[ ${ENABLE_UNITS} -eq 1 ]]; then
-	systemctl --user enable ai-ollama.service ai-openclaw.service
+	run_systemctl_user enable ai-ollama.service ai-openclaw.service
 fi
 
 if [[ ${START_UNITS} -eq 1 ]]; then
-	systemctl --user restart ai-ollama.service
-	systemctl --user restart ai-openclaw.service
+	run_systemctl_user restart ai-ollama.service
+	run_systemctl_user restart ai-openclaw.service
 fi
 
 echo
