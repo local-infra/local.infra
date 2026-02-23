@@ -1,11 +1,23 @@
 # Infra Install Scripts
 
 This folder contains bootstrap scripts for local infra setup.
-End-user entrypoint is only:
+Primary end-user entrypoint is:
 
 ```bash
 ./infra/install/install.sh
 ```
+
+## Hidden local infra user
+
+Create a local account that is hidden in GDM and denied in SSH, but still usable via root/sudo `su`:
+
+```bash
+sudo ./infra/install/scripts/create-fedora-hidden-user.sh \
+  --username localinfra \
+  --homedir /home/localinfra
+```
+
+Both `--username` and `--homedir` are mandatory.
 
 ## Full install (recommended)
 
