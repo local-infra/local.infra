@@ -1,44 +1,110 @@
+# trunk-ignore-all(checkov/CKV_DOCKER_3)
+# trunk-ignore-all(checkov/CKV_DOCKER_2)
 # syntax=docker/dockerfile:1
-FROM fedora:43
+FROM fedora:43@sha256:2bd5aab975833ec5751ef9486f4376bffa8e6c39b3431bfc5da6bacf1613b0aa
 
-ARG USERNAME=openclaw
-ARG UID=1000
-ARG GID=1000
-
-ENV LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
-
-RUN dnf -y update && \
-    dnf -y install \
-      git \
-      nodejs npm \
-      python3 \
-      sudo tini \
-      ca-certificates curl \
+# trunk-ignore(hadolint/DL3041)
+# trunk-ignore(checkov/CKV2_DOCKER_1)
+RUN dnf -y install \
+      sudo tini su git file \
       socat \
+      ca-certificates curl \
       iproute procps-ng && \
+    dnf group install development-tools -y && \
     dnf clean all
 
+# Install Homebrew (для удобства установки OpenClaw)
+RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PATH=/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}
+
+# Install OpenClaw with no-onboarding
+RUN tmp_script="$(mktemp)"; \
+    curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw.ai/refs/heads/main/public/install.sh -o "${tmp_script}"; \
+    bash "${tmp_script}" --no-onboard; \
+    rm -f "${tmp_script}"
+
+# Install camsnap from source (works on x86_64 and arm64 when Go is available)
+# trunk-ignore(hadolint/DL3041)
+RUN dnf -y install golang && \
+    if ! dnf -y install ffmpeg-free; then dnf -y install ffmpeg; fi && \
+    dnf clean all
+
+ARG CAMSNAP_REF=main
+RUN set -eux; \
+    git clone --depth 1 --branch "${CAMSNAP_REF}" https://github.com/steipete/camsnap.git /tmp/camsnap-src;
+WORKDIR /tmp/camsnap-src
+RUN set -eux; \
+    npm run build; \
+    cp camsnap /usr/local/bin/; \
+    chmod +x /usr/local/bin/camsnap*; \
+    rm -rf /tmp/camsnap-src
+
+# Install summarize from npm (arm64-friendly alternative to brew formula)
+RUN npm i -g @steipete/summarize
+
+ENV HOMEBREW_NO_AUTO_UPDATE=1 \
+    HOMEBREW_NO_ENV_HINTS=1
+
+# Preiunstalling OpenClaw Skills common dependecies (for faster skill installation later)
+RUN eval '$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)' && \
+    brew install --quiet \
+        steipete/tap/gifgrep yakitrak/yakitrak/obsidian-cli xdevplatform/tap/xurl \
+        steipete/tap/wacli gemini-cli steipete/tap/remindctl uv antoniorodr/memo/memo \
+        steipete/tap/codexbar ffmpeg steipete/tap/sag 1password-cli steipete/tap/ordercli \
+        steipete/tap/peekaboo steipete/tap/imsg himalaya steipete/tap/gogcli \
+        openai-whisper steipete/tap/goplaces spogo spotify_player openhue/cli/openhue-cli \
+        python steipete/tap/songsee gh
+
+# trunk-ignore(hadolint/DL3041)
+RUN dnf install -y "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm" && \
+    dnf config-manager setopt fedora-cisco-openh264.enabled=1 && \
+    dnf swap -y ffmpeg-free ffmpeg --allowerasing && \
+    (dnf group install -y multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin || \
+     dnf group install -y Multimedia --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin) && \
+    dnf install -y libva-nvidia-driver.i686 libva-nvidia-driver.x86_64 intel-media-driver && \
+    # !!!WARNING!!!: The following swap is required for Hardware codecs with AMD (mesa); it will not work well with with nouveau
+    dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld && \
+    dnf clean all
+
+ENV FFMPEG_GPU_BACKEND=cpu \
+    FFMPEG_GPU_DEVICE=/dev/dri/renderD128 \
+    FFMPEG_GPU_ENCODE=0 \
+    FFMPEG_INTEL_MODE=vaapi \
+    PATH=/usr/local/bin:/usr/local/sbin:${PATH}
+
+# Try not to change things above this comment, if you don't want to reinstall Homebrew and system packages every time.
+# Better change things below this comment
+
 # Пользователь + sudo (внутри контейнера)
-RUN groupadd -g ${GID} ${USERNAME} && \
-    useradd -m -u ${UID} -g ${GID} -s /bin/bash ${USERNAME} && \
-    echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} && \
-    chmod 0440 /etc/sudoers.d/${USERNAME}
+# RUN set -eux; \
+#     getent group "${GID}" >/dev/null || groupadd -g "${GID}" "${USERNAME}"; \
+#     groupadd -f wheel; \
+#     useradd -m -l -u "${UID}" -g "${GID}" -G wheel -s /bin/bash "${USERNAME}"; \
+#     { \
+#       echo "Defaults:${USERNAME} !authenticate"; \
+#       echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL"; \
+#     } > "/etc/sudoers.d/${USERNAME}"; \
+#     chmod 0440 "/etc/sudoers.d/${USERNAME}"
 
-# Ставим OpenClaw CLI глобально
-# (делаем это под root, чтобы не возиться с правами на global npm prefix)
-RUN npm install -g openclaw@latest
+# USER ${USERNAME}
+# WORKDIR /home/${USERNAME}
 
-USER ${USERNAME}
-WORKDIR /home/${USERNAME}
+RUN set -eux; \
+    echo >> "${HOME}/.bashrc"; \
+    echo "eval \"\$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)\"" >> "${HOME}/.bashrc"; \
+    echo "PATH=/usr/local/bin:/usr/local/sbin:\${PATH}" >> "${HOME}/.bashrc"; \
+    echo "if [ -f \"${HOME}/.bashrc\" ]; then . \"${HOME}/.bashrc\"; fi" >> "${HOME}/.bash_profile";
 
 # entrypoint
-COPY --chown=${UID}:${GID} entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# COPY --chown=${UID}:${GID} entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY ffmpeg-gpu /usr/local/bin/ffmpeg-gpu
+COPY ffmpeg /usr/local/bin/ffmpeg
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/ffmpeg-gpu /usr/local/bin/ffmpeg
 
-EXPOSE 18789
+WORKDIR /root
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-
-# В контейнере не ставим daemon через systemd.
-# Просто держим gateway в foreground.
-CMD ["openclaw", "gateway", "--port", "18789", "--verbose"]
+CMD ["sleep", "infinity"]

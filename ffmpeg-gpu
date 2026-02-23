@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+backend="${FFMPEG_GPU_BACKEND:-cpu}"
+device="${FFMPEG_GPU_DEVICE:-/dev/dri/renderD128}"
+encode="${FFMPEG_GPU_ENCODE:-0}"
+self="$(readlink -f "$0")"
+real_ffmpeg="${FFMPEG_REAL_BIN:-}"
+
+if [[ -z "${real_ffmpeg}" ]]; then
+  # for candidate in /home/linuxbrew/.linuxbrew/bin/ffmpeg /usr/bin/ffmpeg /bin/ffmpeg; do
+  for candidate in /usr/bin/ffmpeg /bin/ffmpeg; do
+    if [[ -x "${candidate}" ]] && [[ "$(readlink -f "${candidate}")" != "${self}" ]]; then
+      real_ffmpeg="${candidate}"
+      break
+    fi
+  done
+fi
+
+if [[ -z "${real_ffmpeg}" ]]; then
+  candidate="$(type -P ffmpeg || true)"
+  if [[ -n "${candidate}" ]] && [[ "$(readlink -f "${candidate}")" != "${self}" ]]; then
+    real_ffmpeg="${candidate}"
+  fi
+fi
+
+if [[ -z "${real_ffmpeg}" ]]; then
+  echo "Unable to locate real ffmpeg binary. Set FFMPEG_REAL_BIN=/path/to/ffmpeg" >&2
+  exit 127
+fi
+
+declare -a hw_args
+declare -a enc_args
+
+case "${backend}" in
+  cpu|none)
+    ;;
+  nvidia)
+    hw_args=(-hwaccel cuda -hwaccel_output_format cuda)
+    if [[ "${encode}" != "0" ]]; then
+      enc_args=(-c:v "${FFMPEG_GPU_CODEC:-h264_nvenc}")
+    fi
+    ;;
+  amd)
+    hw_args=(-hwaccel vaapi -vaapi_device "${device}")
+    if [[ "${encode}" != "0" ]]; then
+      enc_args=(-vf "${FFMPEG_VAAPI_FILTER:-format=nv12,hwupload}" -c:v "${FFMPEG_GPU_CODEC:-h264_vaapi}")
+    fi
+    ;;
+  intel)
+    if [[ "${FFMPEG_INTEL_MODE:-vaapi}" == "qsv" ]]; then
+      hw_args=(-hwaccel qsv -qsv_device "${device}")
+      if [[ "${encode}" != "0" ]]; then
+        enc_args=(-c:v "${FFMPEG_GPU_CODEC:-h264_qsv}")
+      fi
+    else
+      hw_args=(-hwaccel vaapi -vaapi_device "${device}")
+      if [[ "${encode}" != "0" ]]; then
+        enc_args=(-vf "${FFMPEG_VAAPI_FILTER:-format=nv12,hwupload}" -c:v "${FFMPEG_GPU_CODEC:-h264_vaapi}")
+      fi
+    fi
+    ;;
+  *)
+    echo "Unsupported FFMPEG_GPU_BACKEND='${backend}'. Use: cpu|nvidia|amd|intel" >&2
+    exit 2
+    ;;
+esac
+
+if [[ "${FFMPEG_GPU_DEBUG:-0}" != "0" ]]; then
+  echo "ffmpeg-gpu backend=${backend} real_ffmpeg=${real_ffmpeg} hw_args=${hw_args[*]:-<none>} enc_args=${enc_args[*]:-<none>}" >&2
+fi
+
+exec "${real_ffmpeg}" "${hw_args[@]}" "${enc_args[@]}" "$@"

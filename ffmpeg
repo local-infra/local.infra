@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Transparent wrapper: software calling "ffmpeg" picks GPU backend via env vars.
+exec /usr/local/bin/ffmpeg-gpu "$@"

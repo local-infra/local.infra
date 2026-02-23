@@ -3,20 +3,25 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        USERNAME: openclaw
-        UID: 1000
-        GID: 1000
     container_name: openclaw
-    network_mode: "host"
+    command: [sleep, infinity]
     ports:
-      - "127.0.0.1:18789:18789"
-    # HOME как volume — сюда будут падать конфиги (~/.openclaw) и кеши
+      - 127.0.0.1:18789:18789
+    # Persistent home for manual OpenClaw install/config inside the container.
     volumes:
-      - openclaw_home:/home/openclaw
-    # Если надо — ключи/настройки через env
+      - openclaw_home:/root:z
     env_file:
       - .env
+    environment:
+      # FFMPEG_GPU_BACKEND = nvidia|amd|intel|cpu|none
+      - FFMPEG_GPU_BACKEND=${FFMPEG_GPU_BACKEND:-nvidia}
+      - FFMPEG_GPU_DEVICE=${FFMPEG_GPU_DEVICE:-/dev/dri/renderD128}
+      - FFMPEG_GPU_ENCODE=${FFMPEG_GPU_ENCODE:-0}
+      - FFMPEG_INTEL_MODE=${FFMPEG_INTEL_MODE:-vaapi}
+    devices:
+      - ${OPENCLAW_GPU_DEVICE_MAP:-nvidia.com/gpu=all}
+    security_opt:
+      - label=disable
     depends_on:
       - ollama
     restart: unless-stopped
@@ -24,20 +29,17 @@ services:
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
-    # Наружу (опционально) только localhost, чтобы можно было тестировать curl'ом
     ports:
-      - "127.0.0.1:11434:11434"
+      - 127.0.0.1:11434:11434
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
     volumes:
       - ollama_data:/root/.ollama
-    # Вариант A: если у тебя настроен CDI (лучший)
     devices:
-      - "nvidia.com/gpu=all"
+      - ${OLLAMA_GPU_DEVICE_MAP:-nvidia.com/gpu=all}
     security_opt:
       - label=disable
     restart: unless-stopped
-
 
 volumes:
   openclaw_home:
