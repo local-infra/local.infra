@@ -12,12 +12,20 @@ Primary end-user entrypoint is:
 Create a local account that is hidden in GDM and denied in SSH, but still usable via root/sudo `su`:
 
 ```bash
-sudo ./infra/install/scripts/create-fedora-hidden-user.sh \
+sudo ./infra/install/scripts/create-fedora-localinfra-user.sh \
   --username localinfra \
   --homedir /home/localinfra
 ```
 
 Both `--username` and `--homedir` are mandatory.
+This script also enables `linger` for the created user.
+
+Remove the user fully (account, home, SSH deny file, AccountsService file, linger):
+
+```bash
+sudo ./infra/install/scripts/remove-fedora-localinfra-user.sh \
+  --username localinfra
+```
 
 ## Full install (recommended)
 

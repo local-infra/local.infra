@@ -3,10 +3,10 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Create a Fedora local service user that is hidden in GDM and denied in SSH.
+Create a Fedora local service user that is hidden in GDM, denied in SSH, and linger-enabled.
 
 Usage:
-  sudo ./infra/install/scripts/create-fedora-hidden-user.sh --username NAME --homedir PATH
+  sudo ./infra/install/scripts/create-fedora-localinfra-user.sh --username NAME --homedir PATH
 
 Required options:
   --username NAME   Linux account name to create/configure
@@ -112,6 +112,15 @@ if command -v systemctl >/dev/null 2>&1; then
   if systemctl list-unit-files accounts-daemon.service >/dev/null 2>&1; then
     systemctl restart accounts-daemon >/dev/null 2>&1 || true
   fi
+fi
+
+if command -v loginctl >/dev/null 2>&1; then
+  if ! loginctl enable-linger "${USERNAME}"; then
+    echo "Error: failed to enable linger for ${USERNAME}." >&2
+    exit 1
+  fi
+else
+  echo "Warning: loginctl not found; linger was not enabled." >&2
 fi
 
 install -d -m 755 /etc/ssh/sshd_config.d
