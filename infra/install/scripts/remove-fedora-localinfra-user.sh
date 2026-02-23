@@ -6,15 +6,19 @@ usage() {
 Remove a Fedora local service user and related helper artifacts.
 
 Usage:
-  sudo ./infra/install/scripts/remove-fedora-localinfra-user.sh --username NAME
+  sudo ./infra/install/scripts/remove-fedora-localinfra-user.sh --username NAME [--delete-home]
 
 Required options:
   --username NAME   Linux account name to remove
+
+Optional:
+  --delete-home     Remove the user's home directory (default: preserve home)
 EOF
   exit 1
 }
 
 USERNAME=""
+DELETE_HOME=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -22,6 +26,10 @@ while [[ $# -gt 0 ]]; do
       [[ $# -lt 2 ]] && usage
       USERNAME="$2"
       shift 2
+      ;;
+    --delete-home)
+      DELETE_HOME=1
+      shift
       ;;
     -h|--help)
       usage
@@ -61,15 +69,17 @@ fi
 pkill -u "${USERNAME}" 2>/dev/null || true
 
 if id "${USERNAME}" >/dev/null 2>&1; then
-  if ! userdel -r "${USERNAME}"; then
+  if ! userdel "${USERNAME}"; then
     echo "Error: failed to remove user '${USERNAME}'." >&2
     exit 1
   fi
   groupdel "${USERNAME}" 2>/dev/null || true
 fi
 
-if [[ -n "${HOME_DIR}" && "${HOME_DIR}" != "/" && "${HOME_DIR}" != "/home" && -d "${HOME_DIR}" ]]; then
-  rm -rf --one-file-system "${HOME_DIR}"
+if [[ "${DELETE_HOME}" -eq 1 ]]; then
+  if [[ -n "${HOME_DIR}" && "${HOME_DIR}" != "/" && "${HOME_DIR}" != "/home" && -d "${HOME_DIR}" ]]; then
+    rm -rf --one-file-system "${HOME_DIR}"
+  fi
 fi
 
 rm -f "/var/lib/AccountsService/users/${USERNAME}"
@@ -92,3 +102,8 @@ fi
 echo "Done."
 echo "Removed user: ${USERNAME}"
 echo "Removed SSH deny file: ${SSH_DENY_FILE}"
+if [[ "${DELETE_HOME}" -eq 1 ]]; then
+  echo "Home directory removed: ${HOME_DIR}"
+else
+  echo "Home directory preserved: ${HOME_DIR}"
+fi

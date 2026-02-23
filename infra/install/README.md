@@ -20,11 +20,19 @@ sudo ./infra/install/scripts/create-fedora-localinfra-user.sh \
 Both `--username` and `--homedir` are mandatory.
 This script also enables `linger` for the created user.
 
-Remove the user fully (account, home, SSH deny file, AccountsService file, linger):
+Remove the user account (default: preserves home; still removes SSH deny file, AccountsService file, linger):
 
 ```bash
 sudo ./infra/install/scripts/remove-fedora-localinfra-user.sh \
   --username localinfra
+```
+
+Delete home too:
+
+```bash
+sudo ./infra/install/scripts/remove-fedora-localinfra-user.sh \
+  --username localinfra \
+  --delete-home
 ```
 
 ## Full install (recommended)
