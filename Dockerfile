@@ -101,9 +101,11 @@ RUN set -eux; \
 # entrypoint
 # COPY --chown=${UID}:${GID} entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY openclaw-autostart.sh /usr/local/bin/openclaw-autostart.sh
+COPY onboard_script.sh /usr/local/bin/onboard_script.sh
 COPY ffmpeg-gpu /usr/local/bin/ffmpeg-gpu
 COPY ffmpeg /usr/local/bin/ffmpeg
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/ffmpeg-gpu /usr/local/bin/ffmpeg
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/openclaw-autostart.sh /usr/local/bin/onboard_script.sh /usr/local/bin/ffmpeg-gpu /usr/local/bin/ffmpeg
 
 WORKDIR /root
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]

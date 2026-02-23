@@ -1,20 +1,38 @@
-After containers are build and runnig make this:
+After containers are built and running, the OpenClaw container now starts smartly on its own:
+
+- If `~/.openclaw/openclaw.json` does not exist yet, port `18789` serves a setup page with onboarding instructions.
+- If config exists, it starts `openclaw gateway --port 18789 --verbose` automatically.
+
+First-time setup command:
 
 ```bash
-podman compose exec openclaw openclaw onboard --install-daemon
+podman compose exec openclaw onboard_script.sh
 ```
 
-## Manual Gateway startup
+`onboard_script.sh` does all of this:
+
+- runs onboarding (`openclaw onboard --install-daemon` by default)
+- forces `gateway.bind` to `lan` in `openclaw.json`
+- runs `killall openclaw-gateway` in a loop until no process remains, then starts
+  `openclaw gateway --port <configured-port> --verbose` in background
+
+Optional: pass your own onboarding flags through to `openclaw onboard`:
 
 ```bash
-podman compose exec openclaw openclaw gateway --port 18789 --verbose
+podman compose exec openclaw onboard_script.sh --non-interactive --accept-risk --mode local
+```
+
+If gateway is still managed elsewhere in your environment, restart the container once:
+
+```bash
+podman compose restart openclaw
 ```
 
 If it says start is blocked by mode, set local mode first:
 
 ```bash
 podman compose exec openclaw openclaw config set gateway.mode local
-openclaw gateway --port 18789 --verbose
+podman compose restart openclaw
 ```
 
 Then check from another shell:
