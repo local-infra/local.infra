@@ -1,3 +1,21 @@
+## Build and run
+
+Build local image from repo root:
+
+```bash
+./infra/install/scripts/build-images.sh openclaw --repo-root "$PWD"
+```
+
+Then in this folder:
+
+```bash
+cp .env.example .env
+podman network create ollama_net 2>/dev/null || true
+podman compose up -d
+```
+
+If you changed the image tag, set `OPENCLAW_IMAGE` in `.env` before `up -d`.
+
 After containers are built and running, the OpenClaw container now starts smartly on its own:
 
 - If `~/.openclaw/openclaw.json` does not exist yet, port `18789` serves a setup page with onboarding instructions.

@@ -1,9 +1,6 @@
 services:
   openclaw:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: openclaw
+    image: ${OPENCLAW_IMAGE:-localhost/openclaw:fedora43}
     command: [openclaw-autostart.sh]
     ports:
       - 127.0.0.1:18789:18789
@@ -22,25 +19,14 @@ services:
       - ${OPENCLAW_GPU_DEVICE_MAP:-nvidia.com/gpu=all}
     security_opt:
       - label=disable
-    depends_on:
-      - ollama
-    restart: unless-stopped
-
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    ports:
-      - 127.0.0.1:11434:11434
-    environment:
-      - OLLAMA_HOST=0.0.0.0:11434
-    volumes:
-      - ollama_data:/root/.ollama
-    devices:
-      - ${OLLAMA_GPU_DEVICE_MAP:-nvidia.com/gpu=all}
-    security_opt:
-      - label=disable
+    networks:
+      - ollama_net
     restart: unless-stopped
 
 volumes:
   openclaw_home:
-  ollama_data:
+
+networks:
+  ollama_net:
+    name: ollama_net
+    external: true

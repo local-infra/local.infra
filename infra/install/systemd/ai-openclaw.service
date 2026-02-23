@@ -1,0 +1,18 @@
+[Unit]
+Description=AI OpenClaw local LLM stack (compose)
+Wants=network-online.target ai-ollama.service
+After=network-online.target ai-ollama.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=__REPO_ROOT__/infra/services/ai/assistants/openclaw-local-llm
+ExecStartPre=-__ENGINE_BIN__ network create ollama_net
+ExecStartPre=/usr/bin/bash -lc 'test -f .env || cp .env.example .env'
+ExecStart=__COMPOSE_CMD__ -f docker-compose.yaml up -d
+ExecStop=__COMPOSE_CMD__ -f docker-compose.yaml down
+TimeoutStartSec=900
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target

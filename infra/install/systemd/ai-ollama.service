@@ -1,0 +1,17 @@
+[Unit]
+Description=AI Ollama stack (compose)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=__REPO_ROOT__/infra/services/ai/ollama
+ExecStartPre=-__ENGINE_BIN__ network create ollama_net
+ExecStart=__COMPOSE_CMD__ -f docker-compose.yaml up -d
+ExecStop=__COMPOSE_CMD__ -f docker-compose.yaml down
+TimeoutStartSec=900
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target
