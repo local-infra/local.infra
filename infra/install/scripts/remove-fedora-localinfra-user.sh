@@ -82,6 +82,20 @@ if [[ "${DELETE_HOME}" -eq 1 ]]; then
   fi
 fi
 
+if [[ -f /etc/subuid ]]; then
+  SUBUID_TMP="$(mktemp /etc/subuid.XXXXXX)"
+  awk -F: -v user_name="${USERNAME}" '$1 != user_name { print }' /etc/subuid >"${SUBUID_TMP}"
+  mv "${SUBUID_TMP}" /etc/subuid
+  chmod 644 /etc/subuid
+fi
+
+if [[ -f /etc/subgid ]]; then
+  SUBGID_TMP="$(mktemp /etc/subgid.XXXXXX)"
+  awk -F: -v user_name="${USERNAME}" '$1 != user_name { print }' /etc/subgid >"${SUBGID_TMP}"
+  mv "${SUBGID_TMP}" /etc/subgid
+  chmod 644 /etc/subgid
+fi
+
 rm -f "/var/lib/AccountsService/users/${USERNAME}"
 
 SSH_DENY_FILE="/etc/ssh/sshd_config.d/90-deny-${USERNAME}.conf"

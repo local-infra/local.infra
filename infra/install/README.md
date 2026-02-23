@@ -18,9 +18,9 @@ sudo ./infra/install/scripts/create-fedora-localinfra-user.sh \
 ```
 
 Both `--username` and `--homedir` are mandatory.
-This script also enables `linger` for the created user.
+This script also enables `linger` and creates `/etc/subuid` + `/etc/subgid` mappings for rootless Podman.
 
-Remove the user account (default: preserves home; still removes SSH deny file, AccountsService file, linger):
+Remove the user account (default: preserves home; still removes SSH deny file, AccountsService file, linger, subuid/subgid mappings):
 
 ```bash
 sudo ./infra/install/scripts/remove-fedora-localinfra-user.sh \

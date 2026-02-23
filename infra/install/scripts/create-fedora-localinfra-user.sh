@@ -3,7 +3,8 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Create a Fedora local service user that is hidden in GDM, denied in SSH, and linger-enabled.
+Create a Fedora local service user that is hidden in GDM, denied in SSH, linger-enabled,
+and ready for rootless Podman (subuid/subgid mappings).
 
 Usage:
   sudo ./infra/install/scripts/create-fedora-localinfra-user.sh --username NAME --homedir PATH
@@ -22,6 +23,7 @@ EOF
 USERNAME=""
 HOME_DIR=""
 SHELL_PATH="/bin/bash"
+SUBID_BLOCK_SIZE=65536
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -75,6 +77,69 @@ if [[ ! -x "${SHELL_PATH}" ]]; then
   exit 1
 fi
 
+ensure_subid_file() {
+  local file_path="$1"
+  if [[ ! -e "${file_path}" ]]; then
+    install -m 644 -o root -g root /dev/null "${file_path}"
+  fi
+}
+
+next_subid_start() {
+  local file_path="$1"
+  local min_start=100000
+
+  awk -F: -v min_start="${min_start}" '
+    $2 ~ /^[0-9]+$/ && $3 ~ /^[0-9]+$/ {
+      end = $2 + $3 - 1
+      if (end > max_end) {
+        max_end = end
+      }
+    }
+    END {
+      if (max_end < min_start) {
+        print min_start
+      } else {
+        print max_end + 1
+      }
+    }
+  ' "${file_path}"
+}
+
+has_subid_mapping() {
+  local file_path="$1"
+  awk -F: -v user_name="${USERNAME}" '
+    $1 == user_name && $2 ~ /^[0-9]+$/ && $3 ~ /^[0-9]+$/ { found = 1 }
+    END { exit(found ? 0 : 1) }
+  ' "${file_path}"
+}
+
+ensure_subid_mapping() {
+  local file_path="$1"
+  local kind="$2" # "uid" or "gid"
+  local start_id=""
+  local end_id=""
+  local usermod_arg=""
+
+  if has_subid_mapping "${file_path}"; then
+    return
+  fi
+
+  start_id="$(next_subid_start "${file_path}")"
+  end_id=$((start_id + SUBID_BLOCK_SIZE - 1))
+
+  if [[ "${kind}" == "uid" ]]; then
+    usermod_arg="--add-subuids"
+  else
+    usermod_arg="--add-subgids"
+  fi
+
+  if usermod "${usermod_arg}" "${start_id}-${end_id}" "${USERNAME}" >/dev/null 2>&1; then
+    return
+  fi
+
+  echo "${USERNAME}:${start_id}:${SUBID_BLOCK_SIZE}" >>"${file_path}"
+}
+
 if id "${USERNAME}" >/dev/null 2>&1; then
   CURRENT_HOME="$(getent passwd "${USERNAME}" | cut -d: -f6)"
   if [[ "${CURRENT_HOME}" != "${HOME_DIR}" ]]; then
@@ -95,6 +160,11 @@ fi
 
 PRIMARY_GROUP="$(id -gn "${USERNAME}")"
 install -d -m 700 -o "${USERNAME}" -g "${PRIMARY_GROUP}" "${HOME_DIR}"
+
+ensure_subid_file "/etc/subuid"
+ensure_subid_file "/etc/subgid"
+ensure_subid_mapping "/etc/subuid" "uid"
+ensure_subid_mapping "/etc/subgid" "gid"
 
 # Disable password-based login (still usable via root/sudo su).
 passwd -l "${USERNAME}" >/dev/null
