@@ -122,14 +122,26 @@ EOF
 chown root:root "${SSH_DENY_FILE}"
 chmod 600 "${SSH_DENY_FILE}"
 
-if command -v sshd >/dev/null 2>&1; then
-  if ! sshd -t; then
-    echo "Error: sshd config validation failed after writing ${SSH_DENY_FILE}." >&2
-    exit 1
+SSH_SERVICE=""
+if command -v systemctl >/dev/null 2>&1; then
+  if systemctl is-active --quiet sshd; then
+    SSH_SERVICE="sshd"
+  elif systemctl is-active --quiet ssh; then
+    SSH_SERVICE="ssh"
   fi
+fi
 
-  if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet sshd; then
-    systemctl reload sshd
+if command -v sshd >/dev/null 2>&1; then
+  # Validate/reload only when SSH daemon is currently active. On fresh systems
+  # sshd binary can exist without host keys, and `sshd -t` would fail.
+  if [[ -n "${SSH_SERVICE}" ]]; then
+    if ! sshd -t; then
+      echo "Error: sshd config validation failed after writing ${SSH_DENY_FILE}." >&2
+      exit 1
+    fi
+    systemctl reload "${SSH_SERVICE}"
+  else
+    echo "Warning: SSH service is not active; deny file was created but validation/reload was skipped." >&2
   fi
 else
   echo "Warning: sshd not found; SSH deny file created but daemon was not validated/reloaded." >&2
