@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ${{ vars.REGISTRY_HOST }} # example: gitea.example.com
+  REGISTRY: host.containers.internal:4000 # temporary override for local registry reachability
   REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
   TAG: ${{ gitea.sha }}
 
@@ -23,6 +23,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Debug registry vars
+        run: |
+          echo "REGISTRY=${{ env.REGISTRY }}"
+          echo "REGISTRY_OWNER=${{ env.REGISTRY_OWNER }}"
+          echo "IMAGE=${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}"
+          getent hosts host.containers.internal || true
+          getent hosts gitea.local || true
 
       - name: Login to Gitea registry
         run: |
