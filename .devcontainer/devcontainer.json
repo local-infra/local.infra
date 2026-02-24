@@ -21,7 +21,7 @@
   "forwardPorts": [],
   "postStartCommand": "",
   "containerUser": "vscode",
-  "runArgs": ["--userns=keep-id"],
+  "runArgs": ["--userns=keep-id", "--add-host=gitea.local:host-gateway"],
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,Z",
   "workspaceFolder": "/workspace",
   "mounts": [
