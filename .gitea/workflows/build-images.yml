@@ -35,7 +35,7 @@ jobs:
       - name: Login to Gitea registry
         run: |
           echo "${{ secrets.REGISTRY_TOKEN }}" \
-            | docker --insecure-registry login "${{ env.REGISTRY }}" \
+            | docker login "${{ env.REGISTRY }}" \
               -u "${{ secrets.REGISTRY_USER }}" \
               --password-stdin
 
