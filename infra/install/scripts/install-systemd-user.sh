@@ -260,6 +260,7 @@ if [[ ${ENABLE_UNITS} -eq 1 ]]; then
 fi
 
 if [[ ${START_UNITS} -eq 1 ]]; then
+	echo "Starting units..."
 	run_systemctl_user restart ai-ollama.service
 	run_systemctl_user restart ai-openclaw.service
 fi
