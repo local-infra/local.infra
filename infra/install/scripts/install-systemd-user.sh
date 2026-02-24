@@ -245,6 +245,14 @@ if [[ "${SYSTEMCTL_USER_PREFIX[*]}" == *"--machine="* ]]; then
 	echo "No active user session bus detected; using ${SYSTEMCTL_USER_PREFIX[*]}."
 fi
 
+if [[ ${ENGINE} == "podman" ]]; then
+	if run_systemctl_user list-unit-files podman.socket >/dev/null 2>&1; then
+		run_systemctl_user enable --now podman.socket
+	else
+		echo "Warning: podman.socket unit not found; compose provider may require manual Podman API setup." >&2
+	fi
+fi
+
 run_systemctl_user daemon-reload
 
 if [[ ${ENABLE_UNITS} -eq 1 ]]; then

@@ -92,6 +92,15 @@ Useful options:
 
 Control services as that user:
 
+For headless/root/sudo sessions (no GUI login), initialize user systemd bus env first:
+
+```bash
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus
+```
+
+Then run:
+
 ```bash
 systemctl --user status ai-ollama.service ai-openclaw.service
 systemctl --user restart ai-ollama.service
