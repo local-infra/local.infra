@@ -41,7 +41,7 @@ jobs:
           # use sudo if job user is not root
           podman info
           echo "${{ secrets.REGISTRY_TOKEN }}" \
-            | ]podman login --tls-verify=false "${{ env.REGISTRY }}" \
+            | podman login --tls-verify=false "${{ env.REGISTRY }}" \
                 -u "${{ secrets.REGISTRY_USER }}" --password-stdin
 
           sudo -E podman build \
