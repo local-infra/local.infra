@@ -34,7 +34,8 @@ cp /workspace/infra/services/scm/gitea/*.container ~/.config/containers/systemd/
 cp /workspace/infra/services/scm/gitea/*.network ~/.config/containers/systemd/
 cp /workspace/infra/services/scm/gitea/*.volume ~/.config/containers/systemd/
 systemctl --user daemon-reload
-systemctl --user enable --now podman.socket gitea.service
+systemctl --user enable --now podman.socket
+systemctl --user start gitea.service
 '
 ```
 
@@ -91,7 +92,7 @@ Then start the runner service:
 ```bash
 sudo -iu localinfra bash -lc '
 set -euo pipefail
-systemctl --user enable --now gitea-build-runner.service
+systemctl --user start gitea-build-runner.service
 '
 ```
 
@@ -119,3 +120,4 @@ sudo -iu localinfra bash -lc 'journalctl --user -u gitea-build-runner.service -f
 - Runner unit mounts `%t/podman/podman.sock` to `/var/run/docker.sock` so build jobs can use Docker-compatible API via rootless Podman.
 - This runner is intended for build/publish workloads. Keep host deployment actions separate (or pull-based on host) to reduce blast radius.
 - If you need LAN access, change `PublishPort=127.0.0.1:...` entries in `gitea.container`.
+- Quadlet-generated units are transient, so `systemctl --user enable gitea.service` (or runner service) fails by design. Use `systemctl --user start ...` after `daemon-reload`; autostart is handled from `[Install]` in the `.container` files.
