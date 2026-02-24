@@ -51,6 +51,19 @@ Gitea will be reachable on:
 3. Create an admin user
 4. Ensure Actions remain enabled (already set via env in `gitea.container`)
 
+Recommended installer values for this Quadlet setup:
+
+- Database Type: `SQLite3`
+- Database Path: `/var/lib/gitea/data/gitea.db`
+- Repository Root Path: `/var/lib/gitea/git/repositories`
+- Git LFS Root Path: `/var/lib/gitea/git/lfs`
+- Log Path: `/var/lib/gitea/data/log`
+- SSH Server Port: `2222`
+- Gitea HTTP Listen Port: `3000`
+- Gitea Base URL: `http://127.0.0.1:3000/`
+
+If you see `http://127.0.0.1:4000/` in the installer, change it to `http://127.0.0.1:3000/` unless you also changed the Quadlet published port.
+
 ## 4) Prepare runner config
 
 Generate default runner config as `localinfra`:
