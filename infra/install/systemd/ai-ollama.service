@@ -2,6 +2,8 @@
 Description=AI Ollama stack (compose)
 Wants=network-online.target
 After=network-online.target
+StartLimitIntervalSec=15min
+StartLimitBurst=90
 
 [Service]
 Type=oneshot
@@ -10,6 +12,8 @@ WorkingDirectory=__REPO_ROOT__/infra/services/ai/ollama
 ExecStartPre=-__ENGINE_BIN__ network create ollama_net
 ExecStart=__COMPOSE_CMD__ -f docker-compose.yaml up -d
 ExecStop=__COMPOSE_CMD__ -f docker-compose.yaml down
+Restart=on-failure
+RestartSec=10s
 TimeoutStartSec=900
 TimeoutStopSec=120
 

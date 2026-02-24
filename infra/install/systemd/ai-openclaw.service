@@ -2,6 +2,8 @@
 Description=AI OpenClaw local LLM stack (compose)
 Wants=network-online.target ai-ollama.service
 After=network-online.target ai-ollama.service
+StartLimitIntervalSec=15min
+StartLimitBurst=90
 
 [Service]
 Type=oneshot
@@ -11,6 +13,8 @@ ExecStartPre=-__ENGINE_BIN__ network create ollama_net
 ExecStartPre=/usr/bin/bash -lc 'test -f .env || cp .env.example .env'
 ExecStart=__COMPOSE_CMD__ -f docker-compose.yaml up -d
 ExecStop=__COMPOSE_CMD__ -f docker-compose.yaml down
+Restart=on-failure
+RestartSec=10s
 TimeoutStartSec=900
 TimeoutStopSec=120
 
