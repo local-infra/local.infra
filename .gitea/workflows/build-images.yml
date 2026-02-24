@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: gitea.local:4000 # temporary override for local registry reachability
+  REGISTRY: 10.90.0.10:3000 # temporary override for local registry reachability
   REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
   TAG: ${{ gitea.sha }}
 
