@@ -1,0 +1,24 @@
+[Unit]
+Description=Gitea Actions build runner (rootless Podman Quadlet)
+Wants=network-online.target gitea.service podman.socket
+After=network-online.target gitea.service podman.socket
+Requires=gitea.service
+
+[Container]
+Image=docker.io/gitea/act_runner:latest
+ContainerName=gitea-build-runner
+Network=gitea.network
+Volume=gitea-build-runner-data.volume:/data
+Volume=%h/.config/gitea/act_runner/config.yaml:/config.yaml:ro
+Volume=%t/podman/podman.sock:/var/run/docker.sock
+Environment=GITEA_INSTANCE_URL=http://gitea:3000
+Exec=daemon --config /config.yaml
+SecurityLabelDisable=true
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
