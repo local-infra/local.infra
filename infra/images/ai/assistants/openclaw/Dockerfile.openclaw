@@ -71,12 +71,19 @@ RUN dnf install -y "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-rel
 
 # trunk-ignore(hadolint/DL3062)
 # trunk-ignore(hadolint/DL3016)
-RUN go install \
-    github.com/Hyaxia/blogwatcher/cmd/blogwatcher@latest github.com/steipete/gifgrep/cmd/gifgrep@latest \
-    github.com/tylerwince/grizzly/cmd/grizzly@latest github.com/steipete/wacli/cmd/wacli@latest \
-    github.com/steipete/ordercli/cmd/ordercli@latest github.com/steipete/eightctl/cmd/eightctl@latest \
-    github.com/ossianhempel/things3-cli/cmd/things@latest github.com/steipete/sonoscli/cmd/sonos@latest \
-    github.com/steipete/blucli/cmd/blu@latest && \
+RUN set -eux; \
+    for pkg in \
+        github.com/Hyaxia/blogwatcher/cmd/blogwatcher@latest \
+        github.com/steipete/gifgrep/cmd/gifgrep@latest \
+        github.com/tylerwince/grizzly/cmd/grizzly@latest \
+        github.com/steipete/wacli/cmd/wacli@latest \
+        github.com/steipete/ordercli/cmd/ordercli@latest \
+        github.com/steipete/eightctl/cmd/eightctl@latest \
+        github.com/ossianhempel/things3-cli/cmd/things@latest \
+        github.com/steipete/sonoscli/cmd/sonos@latest \
+        github.com/steipete/blucli/cmd/blu@latest; do \
+        go install "${pkg}"; \
+    done && \
     npm install -g --ignore-scripts @steipete/oracle mcporter clawhub && \
     uv tool install nano-pdf
 
