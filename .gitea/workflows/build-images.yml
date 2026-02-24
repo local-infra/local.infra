@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ${{ vars.REGISTRY_HOST }}      # example: gitea.example.com
+  REGISTRY: ${{ vars.REGISTRY_HOST }} # example: gitea.example.com
   REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
   TAG: ${{ gitea.sha }}
 
@@ -27,7 +27,7 @@ jobs:
       # - name: Login to Gitea registry
       #   run: |
       #     echo "${{ secrets.REGISTRY_TOKEN }}" \
-      #       | podman login "${{ env.REGISTRY }}" \
+      #       | docker login "${{ env.REGISTRY }}" \
       #         -u "${{ secrets.REGISTRY_USER }}" \
       #         --password-stdin
 
@@ -35,10 +35,10 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
         run: |
-          podman build \
+          docker build \
             -f "${{ matrix.image.context }}/${{ matrix.image.dockerfile }}" \
             -t "${IMAGE}:${TAG}" \
             -t "${IMAGE}:latest" \
             "${{ matrix.image.context }}"
-          podman push "${IMAGE}:${TAG}"
-          podman push "${IMAGE}:latest"
+          docker push "${IMAGE}:${TAG}"
+          docker push "${IMAGE}:latest"

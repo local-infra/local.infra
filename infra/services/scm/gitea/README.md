@@ -96,6 +96,9 @@ Set runner state file path to the shared `/data` volume:
 sudo -iu localinfra bash -lc '
 set -euo pipefail;
 sed -i "s|^  file: .*|  file: /data/.runner|" ~/.config/gitea/act_runner/config.yaml
+sock="/run/user/$(id -u)/podman/podman.sock"
+sed -i "s|^  docker_host: .*|  docker_host: \"unix://${sock}\"|" ~/.config/gitea/act_runner/config.yaml
+sed -i "s|^  network: .*|  network: \"gitea_net\"|" ~/.config/gitea/act_runner/config.yaml
 '
 ```
 
@@ -105,27 +108,17 @@ Create a runner token in Gitea (repo/org settings -> Actions -> Runners), then r
 
 ```bash
 read -r -s -p "Runner token: " RUNNER_TOKEN; echo
-export RUNNER_TOKEN
-sudo --preserve-env=RUNNER_TOKEN -iu localinfra bash -lc '
-set -euo pipefail;
-export XDG_RUNTIME_DIR=/run/user/$(id -u);
-export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus;
-[ -n "${RUNNER_TOKEN:-}" ] || { echo "token is empty"; exit 1; }
-podman run --rm \
-  --entrypoint act_runner \
-  -w /data \
+podman run --rm --entrypoint act_runner -w /data \
   --network gitea_net \
   -v gitea_build_runner_data:/data:Z \
-  -v "${HOME}/.config/gitea/act_runner/config.yaml:/config.yaml:ro,Z" \
+  -v "$HOME/.config/gitea/act_runner/config.yaml:/config.yaml:ro,Z" \
   docker.io/gitea/act_runner:latest \
   register \
     --config /config.yaml \
     --no-interactive \
-    --instance http://gitea:3000 \
-    --token "${RUNNER_TOKEN}" \
+    --instance http://host.containers.internal:4000 \
+    --token "$RUNNER_TOKEN" \
     --name localinfra-build-runner
-systemctl --user start gitea-build-runner.service
-'
 unset RUNNER_TOKEN
 ```
 
@@ -134,7 +127,7 @@ Set runner labels in `~/.config/gitea/act_runner/config.yaml` (this `act_runner`
 ```yaml
 runner:
   labels:
-    - "build:docker://docker.io/docker:27-cli"
+    - "ubuntu-latest:host"
 ```
 
 ## 6) Verify
@@ -149,6 +142,7 @@ systemctl --user status gitea-build-runner.service --no-pager;
 podman ps --filter name=gitea;
 podman ps --filter name=gitea-build-runner;
 podman exec gitea-build-runner sh -c "ls -la /data";
+podman exec gitea-build-runner sh -c "grep -n docker_host /config.yaml";
 '
 ```
 
@@ -161,7 +155,7 @@ sudo -iu localinfra bash -lc 'journalctl --user -u gitea-build-runner.service -f
 
 ## Notes
 
-- Runner unit mounts `%t/podman/podman.sock` to `/var/run/docker.sock` so build jobs can use Docker-compatible API via rootless Podman.
+- Runner unit mounts rootless Podman socket at `%t/podman/podman.sock` and sets `DOCKER_HOST` accordingly (needed only if you use Docker-executor labels). For build pipelines, `build-host:host` is simpler on rootless Podman.
 - This runner is intended for build/publish workloads. Keep host deployment actions separate (or pull-based on host) to reduce blast radius.
 - If you need LAN access, change `PublishPort=127.0.0.1:...` entries in `gitea.container`.
 - `gitea.local` + `/etc/hosts` only solves name resolution. For devcontainers to reach Gitea, either use host networking for the devcontainer or bind Gitea on a non-loopback address.
