@@ -18,7 +18,7 @@ Volume=gitea-config.volume:/etc/gitea
 Environment=GITEA__actions__ENABLED=true
 Environment=GITEA__database__DB_TYPE=sqlite3
 Environment=GITEA__database__PATH=/var/lib/gitea/data/gitea.db
-Environment=GITEA__server__ROOT_URL=http://10.90.0.10:4000/
+Environment=GITEA__server__ROOT_URL=http://10.90.0.10:3000/
 Environment=GITEA__server__SSH_DOMAIN=10.90.0.10
 Environment=GITEA__server__SSH_PORT=2222
 SecurityLabelDisable=true
