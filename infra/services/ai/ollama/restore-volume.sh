@@ -6,7 +6,7 @@ usage() {
   exit 1
 }
 
-if [ "$#" -ne 1 ]; then
+if [[ "$#" -ne 1 ]]; then
   usage
 fi
 
@@ -23,7 +23,7 @@ VOLUME_NAME="$1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="${SCRIPT_DIR}/backup"
 
-if [ ! -d "${BACKUP_DIR}" ]; then
+if [[ ! -d "${BACKUP_DIR}" ]]; then
   echo "Error: backup directory not found: ${BACKUP_DIR}" >&2
   exit 1
 fi
@@ -35,11 +35,11 @@ latest_archive_from_globs() {
   local f=""
 
   for f in "$@"; do
-    if [ ! -e "${f}" ]; then
+    if [[ ! -e "${f}" ]]; then
       continue
     fi
 
-    if [ -z "${latest}" ] || [ "${f}" -nt "${latest}" ]; then
+    if [[ -z "${latest}" ]] || [[ "${f}" -nt "${latest}" ]]; then
       latest="${f}"
     fi
   done
@@ -58,13 +58,13 @@ LATEST_ARCHIVE_ANY="$(
     "${BACKUP_DIR}/"*.tar.gz
 )"
 
-if [ -n "${LATEST_ARCHIVE_MATCHING}" ]; then
+if [[ -n "${LATEST_ARCHIVE_MATCHING}" ]]; then
   LATEST_ARCHIVE="${LATEST_ARCHIVE_MATCHING}"
 else
   LATEST_ARCHIVE="${LATEST_ARCHIVE_ANY}"
 fi
 
-if [ -z "${LATEST_ARCHIVE}" ]; then
+if [[ -z "${LATEST_ARCHIVE}" ]]; then
   echo "Error: no backup archive found in ${BACKUP_DIR}" >&2
   exit 1
 fi
@@ -82,8 +82,8 @@ else
 fi
 
 "${CONTAINER_TOOL}" run --rm \
-  -v "${VOLUME_NAME}:/to" \
-  -v "${BACKUP_DIR}:/backup:ro" \
+  -v "${VOLUME_NAME}:/to:z" \
+  -v "${BACKUP_DIR}:/backup:ro,z" \
   debian:stable-slim \
   sh -ceu "cd /to && tar --numeric-owner ${TAR_EXTRACT_FLAGS} /backup/${ARCHIVE_BASENAME}"
 
