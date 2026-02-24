@@ -34,16 +34,21 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
         run: |
+          id
+          ls -l /var/run/docker.sock
           export CONTAINER_HOST=unix:///var/run/docker.sock
-          echo "${{ secrets.REGISTRY_TOKEN }}" \
-            | podman login --tls-verify=false "${{ env.REGISTRY }}" \
-              -u "${{ secrets.REGISTRY_USER }}" --password-stdin
 
-          podman build \
+          # use sudo if job user is not root
+          sudo -E podman info
+          echo "${{ secrets.REGISTRY_TOKEN }}" \
+            | sudo -E podman login --tls-verify=false "${{ env.REGISTRY }}" \
+                -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+          sudo -E podman build \
             -f "${{ matrix.image.context }}/${{ matrix.image.dockerfile }}" \
             -t "${IMAGE}:${TAG}" \
             -t "${IMAGE}:latest" \
             "${{ matrix.image.context }}"
 
-          podman push --tls-verify=false "${IMAGE}:${TAG}"
-          podman push --tls-verify=false "${IMAGE}:latest"
+          sudo -E podman push --tls-verify=false "${IMAGE}:${TAG}"
+          sudo -E podman push --tls-verify=false "${IMAGE}:latest"
