@@ -23,6 +23,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          github-server-url: http://10.90.0.10:3000
 
       - name: Install podman client
         run: |
