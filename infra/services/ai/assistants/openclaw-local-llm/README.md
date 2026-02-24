@@ -18,10 +18,28 @@ If you changed the image tag, set `OPENCLAW_IMAGE` in `.env` before `up -d`.
 
 After containers are built and running, the OpenClaw container now starts smartly on its own:
 
-- If `~/.openclaw/openclaw.json` does not exist yet, port `18789` serves a setup page with onboarding instructions.
+- If `~/.openclaw/openclaw.json` does not exist yet, port `18789` serves an interactive web terminal (`ttyd`) for onboarding.
 - If config exists, it starts `openclaw gateway --port 18789 --verbose` automatically.
 
-First-time setup command:
+First-time setup in browser:
+
+1. Open `http://127.0.0.1:18789`
+2. Complete onboarding prompts in the web terminal (it runs `onboard_script.sh` automatically)
+3. After onboarding finishes, the container automatically switches from web terminal mode to `openclaw gateway`
+
+Optional: set basic auth for this web terminal in `.env`:
+
+```bash
+OPENCLAW_WEBTTY_AUTH=admin:change-me
+```
+
+Optional: override default web terminal startup command (default is `onboard_script.sh`):
+
+```bash
+OPENCLAW_WEBTTY_INIT_CMD=onboard_script.sh
+```
+
+First-time setup from host shell (alternative):
 
 ```bash
 podman compose exec openclaw onboard_script.sh

@@ -87,6 +87,11 @@ RUN set -eux; \
     npm install -g --ignore-scripts @steipete/oracle mcporter clawhub && \
     uv tool install nano-pdf
 
+# trunk-ignore(hadolint/DL3041)
+RUN dnf -y install \
+      ttyd && \
+    dnf clean all
+
 ENV FFMPEG_GPU_BACKEND=cpu \
     FFMPEG_GPU_DEVICE=/dev/dri/renderD128 \
     FFMPEG_GPU_ENCODE=0 \
