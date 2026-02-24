@@ -1,2 +1,5 @@
 [Network]
 NetworkName=gitea_net
+Subnet=10.90.0.0/24
+Gateway=10.90.0.1
+Internal=true

@@ -6,18 +6,23 @@ After=network-online.target
 [Container]
 Image=docker.io/gitea/gitea:latest-rootless
 ContainerName=gitea
+
 Network=gitea.network
-PublishPort=0.0.0.0:4000:3000
-PublishPort=0.0.0.0:2222:2222
+PodmanArgs=--ip=10.90.0.10 --network-alias=gitea
+
+# Optional
+# PublishPort=127.0.0.1:4000:3000
+# PublishPort=127.0.0.1:2222:2222
 Volume=gitea-data.volume:/var/lib/gitea
 Volume=gitea-config.volume:/etc/gitea
 Environment=GITEA__actions__ENABLED=true
 Environment=GITEA__database__DB_TYPE=sqlite3
 Environment=GITEA__database__PATH=/var/lib/gitea/data/gitea.db
-Environment=GITEA__server__ROOT_URL=http://gitea.local:4000/
-Environment=GITEA__server__SSH_DOMAIN=gitea.local
+Environment=GITEA__server__ROOT_URL=http://10.90.0.10:4000/
+Environment=GITEA__server__SSH_DOMAIN=10.90.0.10
 Environment=GITEA__server__SSH_PORT=2222
 SecurityLabelDisable=true
+
 
 [Service]
 Restart=always
