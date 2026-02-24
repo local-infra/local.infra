@@ -35,7 +35,7 @@ jobs:
           IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
         run: |
           id
-          ls -l /var/run/docker.sock
+          ls -l /var/run/docker.sock || true
           export CONTAINER_HOST=unix:///var/run/docker.sock
 
           # use sudo if job user is not root
