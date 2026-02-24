@@ -39,9 +39,9 @@ jobs:
           export CONTAINER_HOST=unix:///var/run/docker.sock
 
           # use sudo if job user is not root
-          sudo -E podman info
+          podman info
           echo "${{ secrets.REGISTRY_TOKEN }}" \
-            | sudo -E podman login --tls-verify=false "${{ env.REGISTRY }}" \
+            | podman login --tls-verify=false "${{ env.REGISTRY }}" \
                 -u "${{ secrets.REGISTRY_USER }}" --password-stdin
 
           sudo -E podman build \
