@@ -90,6 +90,15 @@ podman run --rm --entrypoint act_runner docker.io/gitea/act_runner:latest genera
 
 You can keep the generated defaults for the first run.
 
+Set runner state file path to the shared `/data` volume:
+
+```bash
+sudo -iu localinfra bash -lc '
+set -euo pipefail;
+sed -i "s|^  file: .*|  file: /data/.runner|" ~/.config/gitea/act_runner/config.yaml
+'
+```
+
 ## 5) Register build runner
 
 Create a runner token in Gitea (repo/org settings -> Actions -> Runners), then register:
@@ -104,6 +113,7 @@ export DBUS_SESSION_BUS_ADDRESS=unix:path=$XDG_RUNTIME_DIR/bus;
 [ -n "${RUNNER_TOKEN:-}" ] || { echo "token is empty"; exit 1; }
 podman run --rm \
   --entrypoint act_runner \
+  -w /data \
   --network gitea_net \
   -v gitea_build_runner_data:/data:Z \
   -v "${HOME}/.config/gitea/act_runner/config.yaml:/config.yaml:ro,Z" \
@@ -138,6 +148,7 @@ systemctl --user status gitea.service --no-pager;
 systemctl --user status gitea-build-runner.service --no-pager;
 podman ps --filter name=gitea;
 podman ps --filter name=gitea-build-runner;
+podman exec gitea-build-runner sh -c "ls -la /data";
 '
 ```
 

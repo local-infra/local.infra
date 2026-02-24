@@ -8,6 +8,7 @@ Requires=gitea.service
 Image=docker.io/gitea/act_runner:latest
 ContainerName=gitea-build-runner
 Network=gitea.network
+WorkingDir=/data
 Volume=gitea-build-runner-data.volume:/data
 Volume=%h/.config/gitea/act_runner/config.yaml:/config.yaml:ro
 Volume=%t/podman/podman.sock:/var/run/docker.sock
