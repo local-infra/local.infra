@@ -17,17 +17,35 @@ echo "Starting browser onboarding terminal on port ${PORT}."
 if command -v ttyd >/dev/null 2>&1; then
 	WEBTTY_AUTH="${OPENCLAW_WEBTTY_AUTH:-}"
 	WEBTTY_INIT_CMD="${OPENCLAW_WEBTTY_INIT_CMD:-onboard_script.sh}"
+	TTYD_WRITABLE_FLAG=""
+
+	if ttyd --help 2>&1 | grep -q -- "--writable"; then
+		TTYD_WRITABLE_FLAG="--writable"
+	elif ttyd --help 2>&1 | grep -q -- "-W"; then
+		TTYD_WRITABLE_FLAG="-W"
+	fi
+
+	if [[ -n "${TTYD_WRITABLE_FLAG}" ]]; then
+		echo "ttyd writable mode enabled (${TTYD_WRITABLE_FLAG})."
+	else
+		echo "WARNING: ttyd writable flag not found; keyboard input may be limited."
+	fi
 
 	while [[ ! -f ${CONFIG_PATH} ]]; do
 		echo "Waiting for onboarding via browser terminal at http://0.0.0.0:${PORT}"
 		echo "Web terminal command: ${WEBTTY_INIT_CMD}"
 
 		set +e
+		TTYD_ARGS=(-i 0.0.0.0 -p "${PORT}")
+		if [[ -n "${TTYD_WRITABLE_FLAG}" ]]; then
+			TTYD_ARGS+=("${TTYD_WRITABLE_FLAG}")
+		fi
 		if [[ -n "${WEBTTY_AUTH}" ]]; then
 			echo "Web terminal auth is enabled."
-			ttyd -i 0.0.0.0 -p "${PORT}" -c "${WEBTTY_AUTH}" bash -lc "${WEBTTY_INIT_CMD}"
+			TTYD_ARGS+=(-c "${WEBTTY_AUTH}")
+			ttyd "${TTYD_ARGS[@]}" bash -lc "${WEBTTY_INIT_CMD}"
 		else
-			ttyd -i 0.0.0.0 -p "${PORT}" bash -lc "${WEBTTY_INIT_CMD}"
+			ttyd "${TTYD_ARGS[@]}" bash -lc "${WEBTTY_INIT_CMD}"
 		fi
 		TTYD_RC=$?
 		set -e
