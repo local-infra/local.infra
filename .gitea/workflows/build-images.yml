@@ -1,0 +1,44 @@
+name: Build and push images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ${{ vars.REGISTRY_HOST }}      # example: gitea.example.com
+  REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
+  TAG: ${{ gitea.sha }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: local/openclaw-hacked-setup
+            context: infra/images/ai/assistants/openclaw
+            dockerfile: Dockerfile.openclaw
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # - name: Login to Gitea registry
+      #   run: |
+      #     echo "${{ secrets.REGISTRY_TOKEN }}" \
+      #       | docker login "${{ env.REGISTRY }}" \
+      #         -u "${{ secrets.REGISTRY_USER }}" \
+      #         --password-stdin
+
+      - name: Build and push ${{ matrix.image.name }}
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
+        run: |
+          docker build \
+            -f "${{ matrix.image.context }}/${{ matrix.image.dockerfile }}" \
+            -t "${IMAGE}:${TAG}" \
+            -t "${IMAGE}:latest" \
+            "${{ matrix.image.context }}"
+          docker push "${IMAGE}:${TAG}"
+          docker push "${IMAGE}:latest"
