@@ -20,10 +20,12 @@ ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     PATH=/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}
 
+ARG OPENCLAW_VERSION=${OPENCLAW_VERSION:-2026.2.19}
 # Install OpenClaw with no-onboarding
-RUN tmp_script="$(mktemp)"; \
-    curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw.ai/refs/heads/main/public/install.sh -o "${tmp_script}"; \
-    bash "${tmp_script}" --no-onboard; \
+RUN tmp_script="$(mktemp)" && \
+    export OPENCLAW_VERSION=${OPENCLAW_VERSION} && \
+    curl -fsSL https://raw.githubusercontent.com/openclaw/openclaw.ai/refs/heads/main/public/install.sh -o "${tmp_script}" && \
+    bash "${tmp_script}" --no-onboard && \
     rm -f "${tmp_script}"
 
 # Install camsnap from source (works on x86_64 and arm64 when Go is available)
