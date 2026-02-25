@@ -11,8 +11,9 @@ Network=gitea.network
 WorkingDir=/data
 Volume=gitea-build-runner-data.volume:/data
 Volume=%h/.config/gitea/act_runner/config.yaml:/config.yaml:ro
-Volume=%t/podman/podman.sock:/var/run/docker.sock
+Volume=%t/podman/podman.sock:%t/podman/podman.sock
 Environment=GITEA_INSTANCE_URL=http://gitea:3000
+Environment=DOCKER_HOST=unix://%t/podman/podman.sock
 Exec=daemon --config /config.yaml
 SecurityLabelDisable=true
 
