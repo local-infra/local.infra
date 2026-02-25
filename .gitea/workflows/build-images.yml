@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: host.containers.internal:4000 # temporary override for local registry reachability
+  REGISTRY: 10.90.0.10:3000 # temporary override for local registry reachability
   PODMAN_URL: unix:///var/run/docker.sock
   REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
   TAG: ${{ gitea.sha }}
