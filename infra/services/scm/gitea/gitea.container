@@ -13,6 +13,7 @@ PodmanArgs=--ip=10.90.0.10 --network-alias=gitea
 # Optional
 PublishPort=0.0.0.0:4000:3000
 PublishPort=0.0.0.0:2222:2222
+
 Volume=gitea-data.volume:/var/lib/gitea
 Volume=gitea-config.volume:/etc/gitea
 Environment=GITEA__actions__ENABLED=true
