@@ -69,5 +69,5 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
         run: |
-          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false --retry=5 --retry-delay=5s "${IMAGE}:${TAG}"
-          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false --retry=5 --retry-delay=5s "${IMAGE}:latest"
+          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false "${IMAGE}:${TAG}"
+          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false "${IMAGE}:latest"
