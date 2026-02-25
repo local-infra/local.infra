@@ -32,28 +32,41 @@ jobs:
           apt-get install -y podman
           podman --version
 
-      - name: Login/build/push with podman
+      - name: Test connections
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
         run: |
-          id
-          ls -l /var/run/docker.sock || true
           export CONTAINER_HOST=unix:///var/run/docker.sock
 
-          # use sudo if job user is not root
-          podman info
           getent hosts host.containers.internal || true
+
+          echo "Testing registry connectivity..."
           curl -sv http://host.containers.internal:4000/v2/ || true
 
+          echo "Testing registry connectivity with direct IP..."
+          curl -sv http://10.90.0.10:3000/v2/ || true
+
+      - name: Login
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
+        run: |
           echo "${{ secrets.REGISTRY_TOKEN }}" \
             | podman login --tls-verify=false "${{ env.REGISTRY }}" \
                 -u "${{ secrets.REGISTRY_USER }}" --password-stdin
 
-          sudo -E podman build \
+      - name: Build
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
+        run: |
+          podman build \
             -f "${{ matrix.image.context }}/${{ matrix.image.dockerfile }}" \
             -t "${IMAGE}:${TAG}" \
             -t "${IMAGE}:latest" \
             "${{ matrix.image.context }}"
 
-          sudo -E podman push --tls-verify=false "${IMAGE}:${TAG}"
-          sudo -E podman push --tls-verify=false "${IMAGE}:latest"
+      - name: Push
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
+        run: |
+          podman push --tls-verify=false "${IMAGE}:${TAG}"
+          podman push --tls-verify=false "${IMAGE}:latest"
