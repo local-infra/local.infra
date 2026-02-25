@@ -69,5 +69,15 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
         run: |
+          # inside workflow as a debug step before Push
+          set -eux
+          echo "job shell direct:"
+          for i in $(seq 1 20); do date -Iseconds; curl -m3 -sS -o /dev/null -w "direct=%{http_code}\n" http://10.90.0.10:3000/v2/ || echo "direct=FAIL"; sleep 2; done
+
+          echo "through podman engine context:"
+          podman --url "${PODMAN_URL}" run --rm docker.io/library/alpine sh -lc '
+            apk add --no-cache curl >/dev/null
+            for i in $(seq 1 20); do date -Iseconds; curl -m3 -sS -o /dev/null -w "engine=%{http_code}\n" http://10.90.0.10:3000/v2/ || echo "engine=FAIL"; sleep 2; done
+
           podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false "${IMAGE}:${TAG}"
           podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false "${IMAGE}:latest"
