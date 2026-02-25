@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: 10.90.0.10:3000 # temporary override for local registry reachability
+  REGISTRY: 127.0.0.1:4000 # temporary override for local registry reachability
   PODMAN_URL: unix:///var/run/docker.sock
   REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
   TAG: ${{ gitea.sha }}
@@ -69,5 +69,5 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image.name }}
         run: |
-          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false "${IMAGE}:${TAG}"
-          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false "${IMAGE}:latest"
+          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false --retry=5 --retry-delay=5s "${IMAGE}:${TAG}"
+          podman --url "${{ env.PODMAN_URL }}" push --tls-verify=false --retry=5 --retry-delay=5s "${IMAGE}:latest"
