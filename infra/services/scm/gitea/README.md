@@ -41,24 +41,24 @@ systemctl --user start gitea.service
 
 Gitea will be reachable on:
 
-- `http://gitea.local:3000` (web)
-- `ssh://git@gitea.local:2222` (git over SSH)
+- `http://gitea.internal:3000` (web + container registry)
+- `ssh://git@gitea.internal:2222` (git over SSH)
 
 Add host mapping on the host OS:
 
 ```bash
-echo "127.0.0.1 gitea.local" | sudo tee -a /etc/hosts
+echo "127.0.0.1 gitea.internal" | sudo tee -a /etc/hosts
 ```
 
 If you use devcontainers, also add host mapping in devcontainer config:
 
 ```json
-"runArgs": ["--add-host=gitea.local:host-gateway"]
+"runArgs": ["--add-host=gitea.internal:host-gateway"]
 ```
 
 ## 3) Complete initial Gitea setup
 
-1. Open `http://gitea.local:3000`
+1. Open `http://gitea.internal:3000`
 2. Complete first-run setup
 3. Create an admin user
 4. Ensure Actions remain enabled (already set via env in `gitea.container`)
@@ -72,10 +72,10 @@ Recommended installer values for this Quadlet setup:
 - Log Path: `/var/lib/gitea/data/log`
 - SSH Server Port: `2222`
 - Gitea HTTP Listen Port: `3000`
-- Server Domain: `gitea.local`
-- Gitea Base URL: `http://gitea.local:3000/`
+- Server Domain: `gitea.internal`
+- Gitea Base URL: `http://gitea.internal:3000/`
 
-If you see `http://127.0.0.1:4000/` in the installer, change it to `http://gitea.local:3000/` unless you also changed the Quadlet published port.
+If you see another URL in the installer, change it to `http://gitea.internal:3000/`.
 
 ## 4) Prepare runner config
 
@@ -116,7 +116,7 @@ podman run --rm --entrypoint act_runner -w /data \
   register \
     --config /config.yaml \
     --no-interactive \
-    --instance http://host.containers.internal:4000 \
+    --instance http://gitea.internal:3000 \
     --token "$RUNNER_TOKEN" \
     --name localinfra-build-runner
 unset RUNNER_TOKEN
@@ -157,8 +157,10 @@ sudo -iu localinfra bash -lc 'journalctl --user -u gitea-build-runner.service -f
 
 - Runner unit mounts rootless Podman socket at `%t/podman/podman.sock` and sets `DOCKER_HOST` accordingly (needed only if you use Docker-executor labels). For build pipelines, `build-host:host` is simpler on rootless Podman.
 - This runner is intended for build/publish workloads. Keep host deployment actions separate (or pull-based on host) to reduce blast radius.
-- If you need LAN access, change `PublishPort=127.0.0.1:...` entries in `gitea.container`.
-- `gitea.local` + `/etc/hosts` only solves name resolution. For devcontainers to reach Gitea, either use host networking for the devcontainer or bind Gitea on a non-loopback address.
+- This config publishes Gitea on `0.0.0.0:3000` and `0.0.0.0:2222`.
+- `gitea.internal` + `/etc/hosts` on the host gives a stable URL for browser/CLI on the host.
+- For devcontainers, add `--add-host=gitea.internal:host-gateway` (or host networking) so the same URL resolves inside containers.
+- This setup publishes Gitea web on host port `3000`. Ensure nothing else is bound to `3000`.
 - Quadlet-generated units are transient, so `systemctl --user enable gitea.service` (or runner service) fails by design. Use `systemctl --user start ...` after `daemon-reload`; autostart is handled from `[Install]` in the `.container` files.
 - If `podman run ... generate-config` appears to hang, force one-shot mode with `--entrypoint act_runner ... generate-config` as shown above.
 - On Fedora with SELinux enforcing, use `:Z`/`:z` for host bind mounts (example uses `:ro,Z` for `config.yaml`).

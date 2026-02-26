@@ -73,10 +73,9 @@ container:
   # Whether to use privileged mode or not when launching task containers (privileged mode is required for Docker-in-Docker).
   privileged: true
   # Any other options to be used when the container is started (e.g., --add-host=my.gitea.url:host-gateway).
-  options: --add-host=gitea.local:host-gateway --user=0 --security_opt=label=disable  --security_opt=seccomp=unconfined --volume=/run/user/992/podman/podman.sock:/var/run/docker.sock:z
+  options: --user 0 --security-opt label=disable --security-opt seccomp=unconfined --volume /run/user/992/podman/podman.sock:/var/run/docker.sock:z
   #options:
-  #  - --add-host=gitea:10.90.0.10
-  #  - --add-host=gitea.local:10.90.0.10
+  #  - --add-host=gitea.internal:10.90.0.10
   #  - --user=0
   #  - --security-opt=label=disable
   #  - --security-opt=seccomp=unconfined
