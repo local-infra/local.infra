@@ -71,15 +71,16 @@ container:
   # If it's empty, act_runner will create a network automatically.
   network: gitea_net
   # Whether to use privileged mode or not when launching task containers (privileged mode is required for Docker-in-Docker).
-  privileged: true
+  privileged: false
   # Any other options to be used when the container is started (e.g., --add-host=my.gitea.url:host-gateway).
-  options: --user 0 --security-opt label=disable --security-opt seccomp=unconfined --volume /run/user/992/podman/podman.sock:/var/run/docker.sock:z
-  #options:
-  #  - --add-host=gitea.internal:10.90.0.10
-  #  - --user=0
-  #  - --security-opt=label=disable
-  #  - --security-opt=seccomp=unconfined
-  #  - --volume=/run/user/992/podman/podman.sock:/var/run/docker.sock:z
+  options: --user=0 --security-opt=label=disable --security-opt=seccomp=unconfined
+  # options:
+  #   - --no-hosts
+  #   - --add-host=gitea.internal:10.90.0.10
+  #   - --user=0
+  #   - --security-opt=label=disable
+  #   - --security-opt=seccomp=unconfined
+  #   - --volume=/run/user/992/podman/podman.sock:/var/run/docker.sock:z
 
   # The parent directory of a job's working directory.
   # NOTE: There is no need to add the first '/' of the path as act_runner will add it automatically.

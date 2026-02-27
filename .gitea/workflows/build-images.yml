@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: gitea.internal:3000
   PODMAN_URL: unix:///var/run/docker.sock
   REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
   TAG: ${{ gitea.sha }}
@@ -24,8 +23,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          github-server-url: http://10.90.0.10:3000
 
       - name: Install podman client
         run: |

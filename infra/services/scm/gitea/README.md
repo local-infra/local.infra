@@ -110,9 +110,10 @@ Create a runner token in Gitea (repo/org settings -> Actions -> Runners), then r
 read -r -s -p "Runner token: " RUNNER_TOKEN; echo
 podman run --rm --entrypoint act_runner -w /data \
   --network gitea_net \
+  --add-host gitea.internal:10.90.0.10 \
   -v gitea_build_runner_data:/data:Z \
   -v "$HOME/.config/gitea/act_runner/config.yaml:/config.yaml:ro,Z" \
-  docker.io/gitea/act_runner:latest \
+  docker.io/gitea/act_runner:latest-dind-rootless\
   register \
     --config /config.yaml \
     --no-interactive \
