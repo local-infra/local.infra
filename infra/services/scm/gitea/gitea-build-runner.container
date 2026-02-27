@@ -5,14 +5,13 @@ After=network-online.target gitea.service podman.socket
 Requires=gitea.service
 
 [Container]
-Image=docker.io/gitea/act_runner:latest
+Image=docker.io/gitea/act_runner:nightly
 ContainerName=gitea-build-runner
 Network=gitea_net
-PodmanArgs=--add-host gitea.internal:10.90.0.10
-
+PodmanArgs=--no-hosts
 WorkingDir=/data
 Volume=gitea-build-runner-data.volume:/data
-Volume=%h/.config/gitea/act_runner/config.yaml:/config.yaml:ro
+Volume=%h/.config/gitea/act_runner/config.yaml:/config.yaml:ro,z
 Volume=%t/podman/podman.sock:%t/podman/podman.sock
 Environment=GITEA_INSTANCE_URL=http://gitea.internal:3000
 Environment=DOCKER_HOST=unix://%t/podman/podman.sock
