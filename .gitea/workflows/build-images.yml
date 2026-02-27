@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 env:
+  REGISTRY: ${{ vars.REGISTRY_HOST }}
   PODMAN_URL: unix:///var/run/docker.sock
   REGISTRY_OWNER: ${{ vars.REGISTRY_OWNER }} # example: my-org or my-user
   TAG: ${{ gitea.sha }}
